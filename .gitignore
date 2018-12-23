@@ -1,0 +1,6 @@
+.idea
+data/*
+tmp*
+sections.txt
+__pycache__
+*.nxml
