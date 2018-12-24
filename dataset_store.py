@@ -14,11 +14,17 @@ class DatasetSaver:
             os.mkdir(self.body_path)
 
     def save_abstract(self, abstract_sections):
+        if not abstract_sections:
+            return
+
         for title, content in abstract_sections.items():
             section_path = os.path.join(self.abstract_path, title)
             self.store_sample(section_path, content)
 
     def save_body(self, body_sections):
+        if not body_sections:
+            return
+
         for title, content in body_sections.items():
             section_path = os.path.join(self.body_path, title)
             self.store_sample(section_path, content)

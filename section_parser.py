@@ -1,5 +1,5 @@
 from lxml import etree
-
+from titles import format_title
 
 class SectionParser:
     def __init__(self, xml_content):
@@ -11,10 +11,12 @@ class SectionParser:
     def parse_abstract(self):
         res = {}
         for section in self.abstract_sections():
-            title = self.format_title(section)
+            title = self.find_title(section)
 
             if title is None:
                 continue
+
+            title = format_title(title)
 
             paragraphs = section.findall(".//p")
 
@@ -25,9 +27,14 @@ class SectionParser:
     def parse_body(self):
         res = {}
         for section in self.body_sections():
-            title = self.format_title(section)
+            title = self.find_title(section)
 
-            if title is None:
+            if title is None or title == '':
+                continue
+
+            title = format_title(title)
+
+            if title == 'Other':
                 continue
 
             paragraphs = section.findall(".//p")
@@ -36,19 +43,8 @@ class SectionParser:
 
         return res
 
-    def format_title(self, section):
-        title = section.find("title").text
-        if title is not None:
-            title = title.replace('?', '').  \
-                          replace('/', ' '). \
-                          replace('\n', ''). \
-                          replace('\"', ''). \
-                          strip()
-
-        if title == '':
-            return None
-        else:
-            return title
+    def find_title(self, section):
+        return section.find("title").text
 
     def body_sections(self):
         return self.ET.xpath("body/sec[title]")

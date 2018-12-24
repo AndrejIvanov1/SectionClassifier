@@ -42,12 +42,13 @@ def save_sections(xml_content):
     abstract_sections = parser.parse_abstract()
     body_sections = parser.parse_body()
 
-    with open("sections.txt", 'a+', encoding='UTF-8') as f:
-        f.write(','.join(body_sections.keys()) + '\n')
+    # with open("sections.txt", 'a+', encoding='UTF-8') as f:
+    #     f.write(','.join(body_sections.keys()) + '\n')
 
-    # ds = DatasetSaver("data")
-    # ds.save_abstract(abstract_sections)
-    # ds.save_body(body_sections)
+    ds = DatasetSaver("data")
+    ds.save_abstract(abstract_sections)
+    ds.save_body(body_sections)
+
 
 def download_single_article(url):
     temp_file = 'tmpehotsd4z.tar.gz'
@@ -88,5 +89,5 @@ if __name__ == "__main__":
     if not os.path.exists(local_list_path):
         download_files_list()
 
-    download_articles(max_number=1000000, skip_until=293)
+    download_articles(max_number=1000000, skip_until=1062)
 
