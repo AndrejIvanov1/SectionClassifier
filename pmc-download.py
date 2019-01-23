@@ -1,16 +1,21 @@
 from urllib.request import urlretrieve
+from ftplib import FTP
 import os
 import tempfile
 import tarfile
 import time
 
+
 from section_parser import SectionParser
 from dataset_store import DatasetSaver
 
+ftp_connection = 'ftp.ncbi.nlm.nih.gov'
 ftp_base_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/'
 files_list_name = 'oa_comm_use_file_list.txt'
 files_list_url = ftp_base_url + files_list_name
 local_list_path = os.path.join("data", files_list_name)
+max_size_mgbs = 1000
+
 
 
 def download_files_list():
@@ -21,20 +26,32 @@ def download_articles(max_number=1, skip_until=-1):
 
     with open(local_list_path, 'r') as f:
         for index, line in enumerate(f):
-            if index == 0:
-                continue
-            if index == max_number + 1:
-                break
-            if index < skip_until:
-                continue
+            try:
+                if index == 0:
+                    continue
+                if index == max_number + 1:
+                    break
+                if index < skip_until:
+                    continue
 
-            print("ARTICLE # {} ------------------------------".format(index))
+                print("ARTICLE # {} ------------------------------".format(index))
+                article_id = line.rstrip().split("\t")[0]
 
-            article_id = line.rstrip().split("\t")[0]
-            xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
+                ftp = FTP(ftp_connection)
+                ftp.login() 
+                ftp.cwd('/pub/pmc')
+                file_size_mgbs = ftp.size(article_id) / 1000000.0
+                if (file_size_mgbs > max_size_mgbs):
+                    print("File too large: {}Mb".format(file_size_mgbs))
+                    continue
 
-            if xml_content is not None:
-                save_sections(xml_content)
+                xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
+
+                if xml_content is not None:
+                    save_sections(xml_content)
+            except Exception as e:
+                with open("errors.txt", "a+", encoding='UTF-8') as err:
+                    err.write("Error parsing # {} \n".format(index))
 
 
 def save_sections(xml_content):
@@ -55,6 +72,7 @@ def download_single_article(url):
 
     print("Downloading {} into {}".format(url, temp_file))
     try:
+        
         urlretrieve(url, temp_file)
 
         # search for an xml file in the tar's files
@@ -89,5 +107,5 @@ if __name__ == "__main__":
     if not os.path.exists(local_list_path):
         download_files_list()
 
-    download_articles(max_number=1000000, skip_until=1062)
+    download_articles(max_number=1000000, skip_until=51568)
 
