@@ -17,11 +17,29 @@ local_list_path = os.path.join("data", files_list_name)
 max_size_mgbs = 1000
 
 
-
+"""
+    Downloads a list of papers we can download from PMC.
+    Stores it in ./data/oa_comm_use_file_list.txt
+"""
 def download_files_list():
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
     urlretrieve(os.path.join(ftp_base_url, files_list_name), local_list_path)
 
+def file_too_large(article_id):
+    ftp = FTP(ftp_connection)
+    ftp.login() 
+    ftp.cwd('/pub/pmc')
+    file_size_mgbs = ftp.size(article_id) / 1000000.0
 
+    return file_size_mgbs > max_size_mgbs
+
+
+"""
+    Downloads all articles from the list, parses the sections and
+    saves them under /data/body and /data/abstract
+"""
 def download_articles(max_number=1, skip_until=-1):
 
     with open(local_list_path, 'r') as f:
@@ -37,11 +55,7 @@ def download_articles(max_number=1, skip_until=-1):
                 print("ARTICLE # {} ------------------------------".format(index))
                 article_id = line.rstrip().split("\t")[0]
 
-                ftp = FTP(ftp_connection)
-                ftp.login() 
-                ftp.cwd('/pub/pmc')
-                file_size_mgbs = ftp.size(article_id) / 1000000.0
-                if (file_size_mgbs > max_size_mgbs):
+                if (file_too_large(article_id)):
                     print("File too large: {}Mb".format(file_size_mgbs))
                     continue
 
@@ -58,9 +72,6 @@ def save_sections(xml_content):
     parser = SectionParser(xml_content)
     abstract_sections = parser.parse_abstract()
     body_sections = parser.parse_body()
-
-    # with open("sections.txt", 'a+', encoding='UTF-8') as f:
-    #     f.write(','.join(body_sections.keys()) + '\n')
 
     ds = DatasetSaver("data")
     ds.save_abstract(abstract_sections)
