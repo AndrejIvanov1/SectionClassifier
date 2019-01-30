@@ -52,6 +52,7 @@ def download_articles(max_number=1, skip_until=-1):
                 if index < skip_until:
                     continue
 
+                start_time = time.time()
                 print("ARTICLE # {} ------------------------------".format(index))
                 article_id = line.rstrip().split("\t")[0]
 
@@ -62,8 +63,14 @@ def download_articles(max_number=1, skip_until=-1):
                 xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
 
                 if xml_content is not None:
+                    print("HERE")
                     save_sections(xml_content)
+
+                last_downloaded_file_is(index)
+
+                #print("Time: ", time.time() - start_time)
             except Exception as e:
+                print(e)
                 with open("errors.txt", "a+", encoding='UTF-8') as err:
                     err.write("Error parsing # {} \n".format(index))
 
@@ -114,9 +121,13 @@ def remove_html_markup(xml_content):
     return xml_content
 
 
+def last_downloaded_file_is(index):
+    with open("last_index.txt", 'w') as f:
+        f.write(str(index))
+
+
 if __name__ == "__main__":
     if not os.path.exists(local_list_path):
         download_files_list()
 
     download_articles(max_number=1000000, skip_until=51568)
-
