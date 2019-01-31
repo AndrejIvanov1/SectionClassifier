@@ -40,7 +40,10 @@ def file_too_large(article_id):
     Downloads all articles from the list, parses the sections and
     saves them under /data/body and /data/abstract
 """
-def download_articles(max_number=1, skip_until=-1):
+def download_articles(max_number=1, skip_until=-1, restore=False):
+
+    if restore:
+        skip_until = last_downloaded_file() + 1
 
     with open(local_list_path, 'r') as f:
         for index, line in enumerate(f):
@@ -63,7 +66,6 @@ def download_articles(max_number=1, skip_until=-1):
                 xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
 
                 if xml_content is not None:
-                    print("HERE")
                     save_sections(xml_content)
 
                 last_downloaded_file_is(index)
@@ -125,9 +127,15 @@ def last_downloaded_file_is(index):
     with open("last_index.txt", 'w') as f:
         f.write(str(index))
 
+def last_downloaded_file():
+    try: 
+        with open("last_index.txt", 'r') as f:
+            return int(f.read().strip())
+    except Exception as e:
+        return -1  
 
 if __name__ == "__main__":
     if not os.path.exists(local_list_path):
         download_files_list()
 
-    download_articles(max_number=1000000, skip_until=51568)
+    download_articles(max_number=1000000, restore=True)

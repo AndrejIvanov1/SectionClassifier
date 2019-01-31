@@ -23,15 +23,15 @@ def classify_title(title):
     elif isConclusion(title):
         return 'Conclusion'
     elif isAuthorsContributions(title):
-        return 'Authors Contributions'
+        return 'Authors_Contributions'
     elif isCompetingInterests(title):
-        return 'Competing Interests'
+        return 'Competing_Interests'
     elif isAbbreviations(title):
         return 'Abbreviations'
     elif isSupporting(title):
-        return 'Supporting Information'
+        return 'Supporting_Information'
     elif isPrePublicationHistory(title):
-        return 'Publication History'
+        return 'Publication_History'
     elif isCase(title):
         return 'Case'
     else:

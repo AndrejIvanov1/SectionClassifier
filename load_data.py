@@ -3,15 +3,15 @@ import os
 data_path = "./data/body"
 name_to_label = {
 	"Abbreviations": 1,
-	"Authors Contributions": 2,
+	"Authors_Contributions": 2,
 	"Case": 3,
-	"Competing interests": 4,
+	"Competing_Interests": 4,
 	"Conclusion": 5,
 	"Discussion": 6,
 	"Introduction": 7,
 	"Methods": 8,
-	"Publication History": 9,
-	"Supporting Information": 10
+	"Publication_History": 9,
+	"Supporting_Information": 10
 }
 
 def get_section_names():
