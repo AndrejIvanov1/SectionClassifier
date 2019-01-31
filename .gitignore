@@ -5,4 +5,4 @@ sections.txt
 __pycache__
 *.nxml
 errors.txt
-fasttext
+fastText
