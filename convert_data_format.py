@@ -23,5 +23,5 @@ if __name__ == "__main__":
 	assert len(X_train) == len(y_train)
 	assert len(X_test) == len(y_test)
 
-	_save_dataset(X_train, y_train, train_dataset_path)
+	#_save_dataset(X_train, y_train, train_dataset_path)
 	_save_dataset(X_test, y_test, test_dataset_path)
