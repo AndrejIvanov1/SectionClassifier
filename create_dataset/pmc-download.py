@@ -158,6 +158,7 @@ def last_downloaded_file():
         with open("last_index.txt", 'r') as f:
             return int(f.read().strip())
     except Exception as e:
+        print(e)
         return -1  
 
 if __name__ == "__main__":
