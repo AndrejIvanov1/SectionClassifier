@@ -1,6 +1,9 @@
 from lxml import etree
 from titles import format_title
 
+"""
+    A class for parsing sections from the XML of an article
+"""
 class SectionParser:
     def __init__(self, xml_content):
         self.ET = etree.fromstring(xml_content)

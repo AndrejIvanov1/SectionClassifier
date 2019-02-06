@@ -11,6 +11,11 @@ def remove_punctuation(title):
     return re.sub(r"[/\n?/'\"]", '', title)
 
 
+"""
+  Input: title - (string) title of a section
+  Returns: The group of titles the title is in.
+           "Other" if title group is not recognized
+"""
 def classify_title(title):
     if isIntroduction(title):
         return 'Introduction'
