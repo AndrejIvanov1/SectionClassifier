@@ -39,9 +39,10 @@ def load_dataset(section_names, max_samples=-1):
 	labels = []
 	for section in section_names:
 		section_data = read_data(section, max_samples=max_samples)
+		print("{}: {} samples".format(section, len(section_data)))
 		data.extend(section_data)
 		labels.extend([name_to_label[section] for x in range(len(section_data))])
 
-	print(len(data), len(labels))
 	assert len(data) == len(labels)
+	print("Total # samples: {}".format(len(data)))
 	return data, labels
