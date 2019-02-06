@@ -1,5 +1,13 @@
+"""
+Usage:
+    pmc_download.py [--restore]
+
+Options:
+    --restore
+"""
 from urllib.request import urlretrieve
 from ftplib import FTP
+from docopt import docopt
 import os
 import tempfile
 import tarfile
@@ -14,8 +22,8 @@ ftp_base_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/'
 files_list_name = 'oa_comm_use_file_list.txt'
 files_list_url = ftp_base_url + files_list_name
 local_list_path = os.path.join("data", files_list_name)
-max_size_mgbs = 1000
-
+MAX_SIZE_MGBS = 1000
+BYTES_IN_MEGABYTE = 1000000.0
 
 """
     Downloads a list of papers we can download from PMC.
@@ -27,20 +35,24 @@ def download_files_list():
 
     urlretrieve(os.path.join(ftp_base_url, files_list_name), local_list_path)
 
+
+"""
+    Checks whether a file from the FTP server is too large to download
+"""
 def file_too_large(article_id):
     ftp = FTP(ftp_connection)
     ftp.login() 
     ftp.cwd('/pub/pmc')
-    file_size_mgbs = ftp.size(article_id) / 1000000.0
+    file_size_mgbs = ftp.size(article_id) / BYTES_IN_MEGABYTE
 
-    return file_size_mgbs > max_size_mgbs
+    return file_size_mgbs > MAX_SIZE_MGBS
 
 
 """
     Downloads all articles from the list, parses the sections and
     saves them under /data/body and /data/abstract
 """
-def download_articles(max_number=1, skip_until=-1, restore=False):
+def download_articles(max_number=100000, restore=False):
 
     if restore:
         skip_until = last_downloaded_file() + 1
@@ -77,6 +89,12 @@ def download_articles(max_number=1, skip_until=-1, restore=False):
                     err.write("Error parsing # {} \n".format(index))
 
 
+"""
+    Input: xml_content - XML content of an article as a string
+
+    Parses the sections from the xml and saves them in the 
+    appropriate datasets.
+"""
 def save_sections(xml_content):
     parser = SectionParser(xml_content)
     abstract_sections = parser.parse_abstract()
@@ -87,6 +105,13 @@ def save_sections(xml_content):
     ds.save_body(body_sections)
 
 
+
+"""
+    Input: url - link of an article on the FTP server
+
+    Returns: None, if article is not found
+             XML of article as string, if article is found
+"""
 def download_single_article(url):
     temp_file = 'tmpehotsd4z.tar.gz'
 
@@ -95,7 +120,6 @@ def download_single_article(url):
         
         urlretrieve(url, temp_file)
 
-        # search for an xml file in the tar's files
         tar = tarfile.open(temp_file)
         for member in tar.getmembers():
             if member.name.endswith('xml'):
@@ -135,7 +159,10 @@ def last_downloaded_file():
         return -1  
 
 if __name__ == "__main__":
+    arguments = docopt(__doc__)
+    print("arguments: ", arguments)
+    restore = arguments['--restore']
     if not os.path.exists(local_list_path):
         download_files_list()
 
-    download_articles(max_number=1000000, restore=True)
+    download_articles(max_number=1000000, restore=restore)

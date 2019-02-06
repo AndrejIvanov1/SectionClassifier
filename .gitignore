@@ -6,4 +6,5 @@ __pycache__
 *.nxml
 errors.txt
 fastText
-model.bin
+*.bin
+figures
