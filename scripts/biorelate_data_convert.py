@@ -26,10 +26,21 @@ def read_articles(path):
 
 	return articles
 
+def remove_title_from_text(text):
+	split_first_word = text.split(' ', 1)
+	title = split_first_word[0]
+
+	title = title.lower()
+	if title in ["introduction", "methods", "methodology", "discussion", "conclusion", "case", "results"]:
+		return split_first_word[1]
+	else:
+		return text
+
 
 def extract_section_text(section):
 	name = section["name"]
 	text = section["raw"].replace('\n', ' ').strip() + '\n'
+	text = remove_title_from_text(text)
 
 	return name, text
 	
@@ -41,7 +52,7 @@ def extract_sections(article_json):
 
 	labeled_sections = [extract_section_text(section) for section in sections] 
 	labeled_sections = [(format_title(pair[0], verbose=False), pair[1]) for pair in labeled_sections]
-	labeled_sections = list(filter(lambda pair: pair[0] != 'Other' and pair[0] != 'Results', labeled_sections))
+	labeled_sections = list(filter(lambda pair: pair[0] != 'Other', labeled_sections))
 	
 	#print(labeled_sections)
 	return labeled_sections
@@ -67,6 +78,6 @@ if __name__ == "__main__":
 
 			labels.extend(titles)
 			data.extend(texts)
-		
+
 	plot_class_distribution(labels, title='Test class distribution')
 	_save_dataset(data, labels, output_path)

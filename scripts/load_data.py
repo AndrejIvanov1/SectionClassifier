@@ -10,8 +10,9 @@ name_to_label = {
 	"Discussion": 6,
 	"Introduction": 7,
 	"Methods": 8,
-	"Publication_History": 9,
-	"Supporting_Information": 10
+	"Results": 9,
+	"Publication_History": 10,
+	"Supporting_Information": 11
 }
 
 def get_section_names():

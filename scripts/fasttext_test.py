@@ -36,7 +36,7 @@ def read_label(line):
 	if len(line) < 11:
 		return line[9]
 
-	return line[9:11] if line[10] == '0' else line[9]
+	return line[9:11] if line[10] in ['0', '1'] else line[9]
 
 def read_labels(lines):
 	return list(map(lambda line: read_label(line), lines))
@@ -59,8 +59,10 @@ if __name__ == "__main__":
 
 	if os.path.exists(model_path + ".bin"):
 		print("Restoring previous model from {}".format(model_path + ".bin"))
+		start_time = time.time()
 		clf = fasttext.load_model(model_path + ".bin")
-		#clf = fasttext.load_model("models/best_so_far.bin")
+		print("Restored in {} seconds. ".format(time.time() - start_time))
+		#print("Labels", clf.labels)
 	else:
 		print("Training model ...")
 		start_time = time.time()
@@ -82,7 +84,9 @@ if __name__ == "__main__":
 	#plot_class_distribution(true_labels)
 	
 	lines = list(map(lambda line: line[11:], lines))
+	start_time = time.time()
 	predicted_labels = clf.predict(lines)
+	print("Predicted in {} seconds. ".format(time.time() - start_time))
 
 	predicted_labels = [x[0] for x in predicted_labels]
 
@@ -99,8 +103,9 @@ if __name__ == "__main__":
 					"Discussion",
 					"Introduction",
 					"Methods",
+					"Results",
 					"Publication_History",
 					"Supporting_Information"]
-	print(classification_report(true_labels, predicted_labels, target_names=target_names))
-	print(confusion_matrix(true_labels, predicted_labels))
+	print(classification_report(true_labels, predicted_labels, target_names=target_names, labels=[str(i) for i in range(1, len(target_names)+1)]))
+	print(confusion_matrix(true_labels, predicted_labels, labels=[str(i) for i in range(1, len(target_names)+1)]))
 	print(accuracy_score(true_labels, predicted_labels))
