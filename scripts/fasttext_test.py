@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
 	#plot_class_distribution(true_labels)
 	
-	lines = list(map(lambda line: line[10:], lines))
+	lines = list(map(lambda line: line[11:], lines))
 	predicted_labels = clf.predict(lines)
 
 	predicted_labels = [x[0] for x in predicted_labels]

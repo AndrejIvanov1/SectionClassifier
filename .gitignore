@@ -1,5 +1,6 @@
 .idea
-data/*
+data
+*/data/*
 tmp*
 sections.txt
 __pycache__

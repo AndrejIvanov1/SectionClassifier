@@ -1,6 +1,6 @@
 import os
 
-data_path = "./data/body"
+data_path = "../data/body"
 name_to_label = {
 	"Abbreviations": 1,
 	"Authors_Contributions": 2,
@@ -17,6 +17,8 @@ name_to_label = {
 def get_section_names():
 	return name_to_label.keys()
 
+def to_numeric_label(name):
+	return name_to_label[name]
 
 def read_data(section, max_samples=-1):
 	print("Loading: ", section)

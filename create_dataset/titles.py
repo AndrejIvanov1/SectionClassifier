@@ -1,8 +1,8 @@
 import re
 
-def format_title(title):
+def format_title(title, verbose=True):
     title = remove_punctuation(title).lower()
-    title = classify_title(title)
+    title = classify_title(title, verbose=verbose)
 
     return title
 
@@ -16,7 +16,7 @@ def remove_punctuation(title):
   Returns: The group of titles the title is in.
            "Other" if title group is not recognized
 """
-def classify_title(title):
+def classify_title(title, verbose=True):
     if isIntroduction(title):
         return 'Introduction'
     elif isMethods(title):
@@ -40,7 +40,8 @@ def classify_title(title):
     elif isCase(title):
         return 'Case'
     else:
-        print("Invalid: {}".format(title))
+        if verbose:
+          print("Invalid: {}".format(title))
         return "Other"
 
 
