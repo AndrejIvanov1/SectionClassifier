@@ -51,12 +51,12 @@ if __name__ == "__main__":
 	input_path = arguments["<input_dir>"]
 	output_path = arguments["<output_file>"]
 
+	labels = []
+	data = []
 	for filename in os.listdir(input_path):
 		fullpath = os.path.join(input_path, filename)
 		articles = read_articles(fullpath)
 
-		labels = []
-		data = []
 		for article in articles:
 			parsed_sections = extract_sections(article)
 			if not parsed_sections:
@@ -68,5 +68,5 @@ if __name__ == "__main__":
 			labels.extend(titles)
 			data.extend(texts)
 		
-		#plot_class_distribution(labels, title='Test class distribution')
-		_save_dataset(data, labels, output_path)
+	plot_class_distribution(labels, title='Test class distribution')
+	_save_dataset(data, labels, output_path)
