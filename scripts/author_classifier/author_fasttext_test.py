@@ -92,9 +92,7 @@ if __name__ == "__main__":
 	start_time = time.time()
 	predicted_labels = clf.predict(lines)
 	print("Predicted in {} seconds. ".format(time.time() - start_time))
-
-	predicted_labels = [int(x[0]) for x in predicted_labels]
-	
+	predicted_labels = [int(read_label(x[0])) for x in predicted_labels]
 	print(true_labels[:2])
 	print(predicted_labels[:2])
 

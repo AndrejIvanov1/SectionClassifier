@@ -1,4 +1,5 @@
 """
+
 Usage:
 	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file>
 
@@ -11,7 +12,8 @@ from docopt import docopt
 from sklearn.model_selection import train_test_split
 import pandas as pd
 """
-	Converts the data to a format the fastText library can work with
+	Input: a csv file of abstracts labeled with authors
+	Output: the same file in a format fasttext can work with
 """
 
 def save_df(df, path):
