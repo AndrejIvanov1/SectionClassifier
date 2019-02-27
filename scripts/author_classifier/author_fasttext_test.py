@@ -19,6 +19,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score, classification_rep
 from docopt import docopt
 import matplotlib.pyplot as plt	
 import time
+from collections import Counter
 
 model_path = "model.bin"
 train_path = "data/fasttext/train.txt"
@@ -26,7 +27,7 @@ test_path = "data/fasttext/test.txt"
 small_dataset_path = "data/fasttext/small_dataset.txt"
 
 def plot_class_distribution(labels, title='Class distributution'):
-	plt.hist(labels, color='blue', edgecolor='black', align='mid')
+	plt.hist(labels, color='blue', edgecolor='black', align='mid', orientation='vertical')
 	plt.title(title)
 	plt.show()
 
@@ -67,7 +68,6 @@ if __name__ == "__main__":
 		start_time = time.time()
 		clf = fasttext.load_model(model_path + ".bin")
 		print("Restored in {} seconds. ".format(time.time() - start_time))
-		#print("Labels", clf.labels)
 	else:
 		print("Training model ...")
 		start_time = time.time()
@@ -80,7 +80,7 @@ if __name__ == "__main__":
 								  bucket=200000)
 		print("Trained in {} seconds. ".format(time.time() - start_time))
 
-	#print(clf.__dict__)
+	print("Clf labels: ", len(clf.labels))
 	
 
 	lines = open(test_path, 'r').read().strip().split('\n')
@@ -89,16 +89,25 @@ if __name__ == "__main__":
 	#plot_class_distribution(true_labels)
 
 	lines = read_texts(lines)
+
 	start_time = time.time()
 	predicted_labels = clf.predict(lines)
+	predicted_labels = [l[0] for l in predicted_labels]
 	print("Predicted in {} seconds. ".format(time.time() - start_time))
-	predicted_labels = [int(read_label(x[0])) for x in predicted_labels]
-	print(true_labels[:2])
-	print(predicted_labels[:2])
 
-	print(len(true_labels), len(predicted_labels))
+	predicted_labels = [read_label(x) for x in predicted_labels]
+	print(predicted_labels)
+	#plot_class_distribution(predicted_labels)
+	true_counter = Counter(true_labels)
+	#print(true_counter)
+
+	predicted_counter = Counter(predicted_labels)
+	#print(predicted_counter)
+
 	assert len(true_labels) == len(predicted_labels)
 
-	print(classification_report(true_labels, predicted_labels, labels=list(set(true_labels))))
+	labels = list(set(true_labels))
+	print("True train labels: ", len(labels))
+	#print(classification_report(true_labels, predicted_labels, labels=list(set(true_labels))))
 	#print(confusion_matrix(true_labels, predicted_labels))
 	print(accuracy_score(true_labels, predicted_labels))

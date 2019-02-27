@@ -24,6 +24,7 @@ if __name__ == "__main__":
 	train_dataset_path = arguments["<train_file>"]
 	test_dataset_path = arguments["<test_file>"]
 	source_file_path = arguments["<source_file>"]
+	min_num_samples = 1
 
 	df = pd.read_csv(source_file_path)
 
@@ -34,9 +35,13 @@ if __name__ == "__main__":
 	df['abstract'] = df['abstract'].apply(lambda abstract: abstract.replace('\n', ' '))
 	df = df[['author_id', 'abstract']]
 	df['author_id'] = df['author_id'].apply(lambda x: "__label__{}".format(x))
-	print(df.head(5))
+	cnt = df['author_id'].value_counts()
+	df = df[df.isin(cnt.index[cnt > min_num_samples]).values]
+	#print(df['author_id'].value_counts())
 
-	df_train, df_test = train_test_split(df, test_size=0.2, shuffle=True)
+	print("Number of labels: ", df['author_id'].nunique())
+
+	df_train, df_test = train_test_split(df, test_size=0.2, shuffle=True, stratify=df['author_id'])
 
 	print(train_dataset_path, test_dataset_path)
 	save_df(df_train, train_dataset_path)
