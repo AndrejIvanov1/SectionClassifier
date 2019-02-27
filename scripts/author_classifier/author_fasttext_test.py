@@ -106,14 +106,13 @@ if __name__ == "__main__":
 
 	#plot_class_distribution(predicted_labels)
 	true_counter = Counter(true_labels)
-	print(true_counter)
-
 	predicted_counter = Counter(predicted_labels)
+	print(true_counter)
 	print(predicted_counter)
 
 	assert len(true_labels) == len(predicted_labels)
 
 	print("True train labels: ", len(labels))
-	#print(classification_report(true_labels, predicted_labels, labels=list(set(true_labels))))
-	#print(confusion_matrix(true_labels, predicted_labels))
+	print(classification_report(true_labels, predicted_labels, labels=labels))
+	print(confusion_matrix(true_labels, predicted_labels))
 	print(accuracy_score(true_labels, predicted_labels))
