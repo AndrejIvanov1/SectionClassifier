@@ -1,7 +1,7 @@
 """
 
 Usage:
-	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary]
+	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author]
 
 Options:
 	--source_file <source_file> Path to file to convert
@@ -9,6 +9,7 @@ Options:
 	--test_file <test_file> Path to test dataset
 	--binary True if we want to save only 2 classes
 	--equalize True if we want the same number of samples for each author
+	---first_author True if we want only papers where the author is first
 """
 from docopt import docopt
 from sklearn.model_selection import train_test_split
@@ -42,8 +43,9 @@ if __name__ == "__main__":
 	source_file_path = arguments["<source_file>"]
 	binary = arguments["--binary"]
 	equalize = arguments["--equalize"]
-	min_num_samples = 150
-	max_num_samples = 200
+	first_author = arguments["--first_author"]
+	min_num_samples = 40
+	max_num_samples = 100
 
 	df = pd.read_csv(source_file_path)
 
@@ -53,6 +55,10 @@ if __name__ == "__main__":
 	print("Number of samples: {}".format(df.shape[0]))
 	#Get rid of newlines
 	df['abstract'] = df['abstract'].apply(lambda abstract: abstract.replace('\n', ' '))
+
+	if first_author:
+		df = df.loc[df['is_a_first_author'] == '1']
+		print("Number of first author samples: {}".format(df.shape[0]))
 	df = df[['author_id', 'abstract']]
 
 	plot_cnt(df)
@@ -60,8 +66,8 @@ if __name__ == "__main__":
 	print("Total number of authors: {}".format(cnt.size))
 	authors_with_low_cnt([5, 10, 20, 50])
 
-	df = df[df.isin(cnt.index[cnt > min_num_samples]).values]
-	df = df[df.isin(cnt.index[cnt < max_num_samples]).values]
+	df = df[df.isin(cnt.index[cnt >= min_num_samples]).values]
+	df = df[df.isin(cnt.index[cnt <= max_num_samples]).values]
 
 	if binary:
 		df = df.loc[(df['author_id'] == 675) | (df['author_id'] == 587)]
