@@ -1,12 +1,13 @@
 """
 
 Usage:
-	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file>
+	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--binary]
 
 Options:
 	--source_file <source_file> Path to file to convert
 	--train_file <train_file> Path to the train dataset
 	--test_file <test_file> Path to test dataset
+	--binary
 """
 from docopt import docopt
 from sklearn.model_selection import train_test_split
@@ -24,7 +25,8 @@ if __name__ == "__main__":
 	train_dataset_path = arguments["<train_file>"]
 	test_dataset_path = arguments["<test_file>"]
 	source_file_path = arguments["<source_file>"]
-	min_num_samples = 100
+	binary = arguments["--binary"]
+	min_num_samples = 150
 	max_num_samples = 200
 
 	df = pd.read_csv(source_file_path)
@@ -35,12 +37,14 @@ if __name__ == "__main__":
 	#Get rid of newlines
 	df['abstract'] = df['abstract'].apply(lambda abstract: abstract.replace('\n', ' '))
 	df = df[['author_id', 'abstract']]
-	df['author_id'] = df['author_id'].apply(lambda x: "__label__{}".format(x))
 	cnt = df['author_id'].value_counts()
 	df = df[df.isin(cnt.index[cnt > min_num_samples]).values]
 	df = df[df.isin(cnt.index[cnt < max_num_samples]).values]
-	#print(df['author_id'].value_counts())
+	print(df['author_id'].value_counts())
 
+	if binary:
+		df = df.loc[(df['author_id'] == 675) | (df['author_id'] == 587)]	
+	df['author_id'] = df['author_id'].apply(lambda x: "__label__{}".format(x))
 	print("Number of labels: ", df['author_id'].nunique())
 
 	df_train, df_test = train_test_split(df, test_size=0.2, shuffle=True, stratify=df['author_id'])

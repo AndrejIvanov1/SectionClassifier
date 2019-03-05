@@ -10,3 +10,4 @@ fastText
 *.bin
 figures
 models
+*.csv

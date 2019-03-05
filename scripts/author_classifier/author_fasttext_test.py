@@ -68,8 +68,6 @@ if __name__ == "__main__":
 	loss = arguments["<loss>"]
 	retrain = arguments["--retrain"]
 
-	print(epoch, dim, lr, n_gram, loss, retrain)
-
 	if not retrain and os.path.exists(model_path + ".bin"):
 		print("Restoring previous model from {}".format(model_path + ".bin"))
 		start_time = time.time()
@@ -86,9 +84,6 @@ if __name__ == "__main__":
 								  word_ngrams=n_gram,
 								  bucket=200000)
 		print("Trained in {} seconds. ".format(time.time() - start_time))
-
-	print("Clf labels: ", len(clf.labels))
-	
 
 	lines = open(test_path, 'r').read().strip().split('\n')
 	true_labels = read_labels(lines)
