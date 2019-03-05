@@ -1,7 +1,7 @@
 """
 
 Usage:
-	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author]
+	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author] [--preprocess]
 
 Options:
 	--source_file <source_file> Path to file to convert
@@ -11,6 +11,7 @@ Options:
 	--equalize True if we want the same number of samples for each author
 	---first_author True if we want only papers where the author is first
 """
+from preprocessing import preprocess
 from docopt import docopt
 from sklearn.model_selection import train_test_split
 import pandas as pd
@@ -21,7 +22,7 @@ import matplotlib.pyplot as plt
 """
 
 def save_df(df, path):
-	df.to_csv(path, sep=' ', index=False, header=False)
+	df.to_csv(path, sep=' ', index=False, header=False, encoding='utf-8')
 
 
 def plot_cnt(df):
@@ -44,10 +45,11 @@ if __name__ == "__main__":
 	binary = arguments["--binary"]
 	equalize = arguments["--equalize"]
 	first_author = arguments["--first_author"]
-	min_num_samples = 40
-	max_num_samples = 100
+	do_preprocess = arguments["--preprocess"]
+	min_num_samples = 150
+	max_num_samples = 200
 
-	df = pd.read_csv(source_file_path)
+	df = pd.read_csv(source_file_path, encoding='utf-8')
 
 	# Drop rows with missing abstract
 	df.dropna(inplace=True) 
@@ -56,11 +58,18 @@ if __name__ == "__main__":
 	#Get rid of newlines
 	df['abstract'] = df['abstract'].apply(lambda abstract: abstract.replace('\n', ' '))
 
+	if do_preprocess:
+		df['abstract'] = df['abstract'].apply(lambda abstract: preprocess(abstract, 
+																		  remove_stopwords=True,
+																		  do_stem=True))
+
+	print(df['abstract'])
 	if first_author:
 		df = df.loc[df['is_a_first_author'] == '1']
 		print("Number of first author samples: {}".format(df.shape[0]))
 	df = df[['author_id', 'abstract']]
 
+	print(df)
 	plot_cnt(df)
 	cnt = df['author_id'].value_counts()
 	print("Total number of authors: {}".format(cnt.size))
