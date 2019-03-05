@@ -82,6 +82,8 @@ if __name__ == "__main__":
 								  lr=lr,
 								  loss=loss,
 								  word_ngrams=n_gram,
+								  ws=5,
+								  neg=5,
 								  bucket=200000)
 		print("Trained in {} seconds. ".format(time.time() - start_time))
 
@@ -109,5 +111,5 @@ if __name__ == "__main__":
 
 	print("True train labels: ", len(labels))
 	print(classification_report(true_labels, predicted_labels, labels=labels))
-	print(confusion_matrix(true_labels, predicted_labels))
+	#print(confusion_matrix(true_labels, predicted_labels))
 	print(accuracy_score(true_labels, predicted_labels))

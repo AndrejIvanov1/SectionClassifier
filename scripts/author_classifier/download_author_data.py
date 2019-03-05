@@ -79,7 +79,7 @@ def download_abstract(pm_id):
 
 	return abstract
 
-def add_abstracts(df, skip_until=21973):
+def add_abstracts(df, skip_until=30517):
 	for index, row in df.iterrows():
 		if index < skip_until:
 			continue
