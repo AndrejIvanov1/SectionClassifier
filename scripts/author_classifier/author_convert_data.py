@@ -1,7 +1,7 @@
 """
 
 Usage:
-	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author] [--preprocess] [--pad] [--plot]
+	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author] [--preprocess] [--pad] [--plot] [--no_duplicates]
 
 Options:
 	--source_file <source_file> Path to file to convert
@@ -12,6 +12,7 @@ Options:
 	--first_author True if we want only papers where the author is first
 	--pad True if we want to equalize number of samples per author by duplicating sample
 	--plot
+	--no_duplicates
 """
 from preprocessing import preprocess
 from docopt import docopt
@@ -49,7 +50,25 @@ def pad_df(df):
 	
 	return df
 
+def trim_duplicates(df):
+	prev_size = df.shape[0]
+	#temp = df.groupby('abstract').size().reset_index(name='counts')
+	#print(temp.groupby('counts').size())
+	
+	df = df.drop_duplicates(subset='abstract', keep='first')
+	print("No removed duplicates: {}".format(prev_size - df.shape[0]))
+
+	return df
+	 
+def remove_duplicates(df):
+	prev_size = df.shape[0]
+	df = df.drop_duplicates(subset='abstract', keep=False)
+	print("No removed duplicates: {}".format(prev_size - df.shape[0]))
+
+	return df
+
 if __name__ == "__main__":
+	############## Read command line arguments ####################
 	arguments = docopt(__doc__)
 	train_dataset_path = arguments["<train_file>"]
 	test_dataset_path = arguments["<test_file>"]
@@ -60,15 +79,18 @@ if __name__ == "__main__":
 	do_preprocess = arguments["--preprocess"]
 	pad = arguments["--pad"]
 	plot = arguments["--plot"]
+	no_duplicates = arguments["--no_duplicates"]
 	min_num_samples = 50
 	max_num_samples = 200
+	################################################################
 
 	df = pd.read_csv(source_file_path, encoding='utf-8')
 
-	# Drop rows with missing abstract
 	df.dropna(inplace=True) 
 
 	print("Number of samples: {}".format(df.shape[0]))
+	print("Unique # of abstracts: {}").format(df.abstract.nunique())
+
 	#Get rid of newlines
 	df['abstract'] = df['abstract'].apply(lambda abstract: abstract.replace('\n', ' '))
 
@@ -76,7 +98,6 @@ if __name__ == "__main__":
 		df['abstract'] = df['abstract'].apply(lambda abstract: preprocess(abstract, 
 																		  remove_stopwords=True,
 																		  do_stem=True))
-
 	if first_author:
 		df = df.loc[df['is_a_first_author'] == '1']
 		print("Number of first author samples: {}".format(df.shape[0]))
@@ -86,26 +107,30 @@ if __name__ == "__main__":
 	if plot:
 		plot_cnt(df)
 
+	if binary:
+		df = df.loc[(df['author_id'] == 136) | (df['author_id'] == 1565)]
+
+	if no_duplicates:
+		df = remove_duplicates(df)
+
 	cnt = df['author_id'].value_counts()
 	print("Total number of authors: {}".format(cnt.size))
 	authors_with_low_cnt([5, 10, 20, 50])
-
 	df = df[df.isin(cnt.index[cnt >= min_num_samples]).values]
 	df = df[df.isin(cnt.index[cnt <= max_num_samples]).values]
-
-	if binary:
-		df = df.loc[(df['author_id'] == 675) | (df['author_id'] == 587)]
 
 	if equalize:
 		df = df.groupby('author_id').head(min_num_samples)
 
-	if pad:
-		df = pad_df(df)
 
 	df['author_id'] = df['author_id'].apply(lambda x: "__label__{}".format(x))
 	print("Number of labels: {}".format(df['author_id'].nunique()))
+	print("Number of samples: {}".format(df.shape[0]))
 
 	df_train, df_test = train_test_split(df, test_size=0.2, shuffle=True, stratify=df['author_id'])
+	
+	if pad:
+		df_train = pad_df(df_train)
 
 	print("Train counts: ", df_train['author_id'].value_counts())
 	print("Test counts: ", df_test['author_id'].value_counts())

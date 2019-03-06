@@ -101,6 +101,17 @@ if __name__ == "__main__":
 	predicted_labels = [l[0] for l in predicted_labels]
 	predicted_labels = [read_label(x) for x in predicted_labels]
 
+	#######Walk away - you didn't see this part ###############
+
+	print([predicted_labels[i] for i in range(len(true_labels)) if true_labels[i] == 2098])
+	print([true_labels[i] for i in range(len(true_labels)) if predicted_labels[i] == 2098])
+
+
+
+
+
+	###############################################################
+
 	#plot_class_distribution(predicted_labels)
 	true_counter = Counter(true_labels)
 	predicted_counter = Counter(predicted_labels)
@@ -111,5 +122,6 @@ if __name__ == "__main__":
 
 	print("True train labels: ", len(labels))
 	print(classification_report(true_labels, predicted_labels, labels=labels))
-	#print(confusion_matrix(true_labels, predicted_labels))
+	if len(true_labels) < 5:
+		print(confusion_matrix(true_labels, predicted_labels))
 	print(accuracy_score(true_labels, predicted_labels))
