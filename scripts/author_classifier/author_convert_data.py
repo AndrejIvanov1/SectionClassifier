@@ -1,7 +1,7 @@
 """
 
 Usage:
-	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author] [--preprocess]
+	author_convert_data.py --source_file <source_file> --train_file <train_file> --test_file <test_file> [--equalize] [--binary] [--first_author] [--preprocess] [--pad] [--plot]
 
 Options:
 	--source_file <source_file> Path to file to convert
@@ -9,7 +9,9 @@ Options:
 	--test_file <test_file> Path to test dataset
 	--binary True if we want to save only 2 classes
 	--equalize True if we want the same number of samples for each author
-	---first_author True if we want only papers where the author is first
+	--first_author True if we want only papers where the author is first
+	--pad True if we want to equalize number of samples per author by duplicating sample
+	--plot
 """
 from preprocessing import preprocess
 from docopt import docopt
@@ -37,6 +39,16 @@ def authors_with_low_cnt(counts):
 	for count in counts:
 		print("Authors, < {} abstracts: {}".format(count, cnt.index[cnt < count].size))
 
+def pad_df(df):
+	#temp = df.groupby(['author_id']).size().reset_index(name='counts')
+	for author_id in df.author_id.unique():
+		for i in range(4):
+			df = df.append(df[df.author_id == author_id])
+
+	df = df.groupby('author_id').head(max_num_samples)
+	
+	return df
+
 if __name__ == "__main__":
 	arguments = docopt(__doc__)
 	train_dataset_path = arguments["<train_file>"]
@@ -46,7 +58,9 @@ if __name__ == "__main__":
 	equalize = arguments["--equalize"]
 	first_author = arguments["--first_author"]
 	do_preprocess = arguments["--preprocess"]
-	min_num_samples = 150
+	pad = arguments["--pad"]
+	plot = arguments["--plot"]
+	min_num_samples = 50
 	max_num_samples = 200
 
 	df = pd.read_csv(source_file_path, encoding='utf-8')
@@ -63,14 +77,15 @@ if __name__ == "__main__":
 																		  remove_stopwords=True,
 																		  do_stem=True))
 
-	print(df['abstract'])
 	if first_author:
 		df = df.loc[df['is_a_first_author'] == '1']
 		print("Number of first author samples: {}".format(df.shape[0]))
+	
 	df = df[['author_id', 'abstract']]
 
-	print(df)
-	plot_cnt(df)
+	if plot:
+		plot_cnt(df)
+
 	cnt = df['author_id'].value_counts()
 	print("Total number of authors: {}".format(cnt.size))
 	authors_with_low_cnt([5, 10, 20, 50])
@@ -83,6 +98,9 @@ if __name__ == "__main__":
 
 	if equalize:
 		df = df.groupby('author_id').head(min_num_samples)
+
+	if pad:
+		df = pad_df(df)
 
 	df['author_id'] = df['author_id'].apply(lambda x: "__label__{}".format(x))
 	print("Number of labels: {}".format(df['author_id'].nunique()))
