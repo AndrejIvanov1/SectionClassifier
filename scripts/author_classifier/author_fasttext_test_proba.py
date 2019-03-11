@@ -1,0 +1,151 @@
+"""
+Usage:
+	author_fasttext_test.py --train_file <train_file> --test_file <test_file> --model_file <model_file> [--epoch <epoch>] [--dim <dim>] [--lr <lr>] [--n_gram <n_gram>] [--loss <loss>] [--retrain]
+
+Options:
+	--train_file <train_file> Path to the train dataset
+	--test_file <test_file> Path to test dataset
+	--model_file <model_file> Where to save the model
+	--epoch <epoch> Number of training epochs [10]
+	--dim <dim> Size of words vectors [300]
+	--lr <lr> Learning rate [0.25]
+	--n_gram <n_gram> Max lenght of word n-grams [3]
+	--loss <loss> Loss function [softmax]
+	--retrain Do not restore previous model
+"""
+import fasttext
+import os
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
+from docopt import docopt
+import matplotlib.pyplot as plt	
+import time
+from collections import Counter
+
+model_path = "model.bin"
+train_path = "data/fasttext/train.txt"
+test_path = "data/fasttext/test.txt"
+small_dataset_path = "data/fasttext/small_dataset.txt"
+
+def plot_class_distribution(labels, title='Class distributution', hist=True):
+	if hist:
+		plt.hist(labels, color='blue', edgecolor='black', align='mid', orientation='vertical')
+	else:
+		c = Counter(labels)
+		plt.bar(c.keys(), c.values(), width=4)
+	plt.title(title)
+	plt.show()
+
+
+def read_label(line):
+	if line.isdigit():
+		return int(line)
+
+	label = line.split(' ')[0]
+	label = label[9:]
+	return int(label)
+
+def read_text(line):
+	return line.split(' ', 1)[1]
+
+def read_texts(lines):
+	return list(map(lambda line: read_text(line), lines))
+
+def read_labels(lines):
+	return list(map(lambda line: read_label(line), lines))
+
+def remove_low_prob_predictions(true_labels, predicted_labels, predicted_probabilites):
+	proba_limit = 0.8
+	prev_len = len(true_labels)
+	true_labels = [true_labels[i] for i in range(len(true_labels)) if predicted_probabilites[i] > proba_limit]
+	predicted_labels = [predicted_labels[i] for i in range(len(predicted_labels)) if predicted_probabilites[i] > proba_limit]
+
+	print("Previous number of samples: {}".format(prev_len))
+	print("After cutting low prob: {}".format(len(true_labels)))
+
+	return true_labels, predicted_labels
+
+def top_k_accuracy(true_labels, predicted_labels):
+	correct_labels = [true_labels[i] for i in range(len(true_labels)) if true_labels[i] in predicted_labels[i]]
+
+	return float(len(correct_labels)) / len(true_labels)
+
+def read_predictions(clf, lines, k=5):
+	start_time = time.time()
+	predictions = clf.predict_proba(lines, k=k)
+	print("Predicted in {} seconds. ".format(time.time() - start_time))
+	#predictions = [l[0] for l in predictions]
+	predictions = [zip(*pred) for pred in predictions]
+	predicted_labels, predicted_probabilites = zip(*predictions)
+	predicted_labels = [[read_label(x) for x in pred] for pred  in predicted_labels]
+	print(predicted_labels[:3])
+
+	return predicted_labels, predicted_probabilites
+
+if __name__ == "__main__":
+	arguments = docopt(__doc__)
+	print("Arguments: ", arguments)
+
+	train_path = arguments["<train_file>"]
+	test_path = arguments["<test_file>"]
+	model_path = arguments["<model_file>"]
+
+	epoch = int(arguments["<epoch>"])
+	dim = int(arguments["<dim>"])
+	lr = float(arguments["<lr>"])
+	n_gram = int(arguments["<n_gram>"])
+	loss = arguments["<loss>"]
+	retrain = arguments["--retrain"]
+
+	if not retrain and os.path.exists(model_path + ".bin"):
+		print("Restoring previous model from {}".format(model_path + ".bin"))
+		start_time = time.time()
+		clf = fasttext.load_model(model_path + ".bin")
+		print("Restored in {} seconds. ".format(time.time() - start_time))
+	else:
+		print("Training model ...")
+		start_time = time.time()
+		clf = fasttext.supervised(train_path, model_path,
+								  epoch=epoch, 
+								  dim=dim, 
+								  lr=lr,
+								  loss=loss,
+								  word_ngrams=n_gram,
+								  ws=5,
+								  neg=5,
+								  bucket=200000)
+		print("Trained in {} seconds. ".format(time.time() - start_time))
+
+	lines = open(test_path, 'r').read().strip().split('\n')
+	true_labels = read_labels(lines)
+	labels = list(sorted(set(true_labels)))
+
+	#plot_class_distribution(true_labels, hist=False)
+
+	lines = read_texts(lines)
+
+	predicted_labels, predicted_probabilites = read_predictions(clf, lines)
+	#true_labels, predicted_labels = remove_low_prob_predictions(true_labels, predicted_labels, predicted_probabilites)
+
+	#######Walk away - you didn't see this part ###############
+
+	"""
+	print([predicted_labels[i] for i in range(len(true_labels)) if true_labels[i] == 2098])
+	print([true_labels[i] for i in range(len(true_labels)) if predicted_labels[i] == 2098])"""
+
+	###############################################################
+
+	"""
+	true_counter = Counter(true_labels)
+	predicted_counter = Counter(predicted_labels)
+	print(true_counter)
+	print(predicted_counter) """
+
+	assert len(true_labels) == len(predicted_labels)
+
+	print("True train labels: ", len(labels))
+	print(top_k_accuracy(true_labels, predicted_labels))
+	"""
+	print(classification_report(true_labels, predicted_labels, labels=labels))
+	if len(true_labels) < 5:
+		print(confusion_matrix(true_labels, predicted_labels))
+	print(accuracy_score(true_labels, predicted_labels))"""
