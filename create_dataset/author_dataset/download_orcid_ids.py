@@ -1,17 +1,11 @@
 """
 Usage:
-	process_authors.py --target_file <target_file> --output_file <output_file>
+	download_orcid_ids.py --target_file <target_file> --output_file <output_file>
 
 Options:
 	--target_file <target_file> File to process
-	--output_file <output_file> Where to save the file with the abstracts
+	--output_file <output_file> Where to save the file with the orcid ids
 """
-
-"""
-	Input: a file with author ids and pmc ids
-
-	Output: the input file augmented with the actual abstract texts (downloaded from pmc) 
-""" 
 
 from docopt import docopt
 import requests
@@ -26,60 +20,31 @@ retries = Retry(total=5, backoff_factor=1)
 s.mount('https://', HTTPAdapter(max_retries=retries))
 
 min_abstract_length = 225
+MAX_PUBMED_ID = int(25 * 1e6)
+MAX_PMC_ID = 6411461
 
-def not_valid_abstract(abstract):
-	#print(len(abstract), abstract)
-	return len(abstract) < min_abstract_length
+def pmc_url(pmc_id):
+	return 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id={}&retmode=xml'.format(pmc_id)
 
+def pubmed_url(pubmed_id):
+	url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={}&retmode=xml'.format(pubmed_id)
 
-def is_list_of_names(text):
-	words = text.replace('\n', ' ').split()
+def download_article(id):		
+	url = pmc_url(id)
 
-	if len(words) == 1:
-		return False 
-
-	uppercase_words = float(len([w for w in words if w[0].isupper()]))
-
-	if uppercase_words / len(words) > 0.7:
-		#print("LIST OF NAMES: ", text)
-		return True
-
-
-def find_abstract(text):
-	""" 
-		The format of the text files is not consistent.
-		Sometimes the abstract is the 3rd last paragraph, sometimes the 4th last.
-	"""
-	left = max(-6, -len(text))
-	right = -2
-
-	for i in range(left, right):
-		#print(i, text[i])
-		if "<?xml" in text[i] or \
-		   "author information:" in text[i].lower() or \
-		   "collaborators:" in text[i].lower() or \
-		   "copyright: " in text[i].lower() or \
-		   "Comment on" in text[i] or \
-		   "Comment in" in text[i] or \
-		   u"\xc2" in text[i] or \
-		   is_list_of_names(text[i]):
-			text[i] = ''
-
-	return max(text[left:right], key=len)
-
-def download_abstract(pm_id):		
-	url = 'https://www.ncbi.nlm.nih.gov/pubmed/{}?report=abstract&format=text'.format(pm_id)
-	
 	r = s.get(url)
-	text = r.content.decode('utf8')
-	text = text.split('\n\n')
+	xml_content = r.content
 
-	abstract = find_abstract(text)
-	abstract = abstract.replace('\n', ' ')
+	if 'orchid' in xml_content:
+		print(xml_content)
 
-	return abstract
+	#text = r.content.decode('utf8')
+	#text = text.split('\n\n')
 
-def add_abstracts(df, skip_until=30517):
+	return 1
+
+def add_orcid_ids(df, skip_until=MAX_PUBMED_ID):
+	"""
 	for index, row in df.iterrows():
 		if index < skip_until:
 			continue
@@ -95,7 +60,14 @@ def add_abstracts(df, skip_until=30517):
 		# Download and save abstract if we don't have it yet
 		print("Index: {}, pm_id: {}".format(index, row['pm_id']))
 		abstract = download_abstract(row['pm_id'])
-		df.loc[index, 'abstract'] = abstract
+		df.loc[index, 'abstract'] = abstract"""
+
+	for id in reversed(range(MAX_PMC_ID)):
+		if skip_until < id:
+			continue
+
+		print("Downloading: {}".format(id))
+		xml_content = download_article(id)
 
 
 if __name__ == "__main__":
@@ -104,9 +76,8 @@ if __name__ == "__main__":
 	output_path = arguments["<output_file>"]
 	
 	df = pd.read_csv(filepath)
-	#df['abstract'] = df['abstract'].apply(lambda abstract: abstract.replace('\n', ' ') if not pd.isnull(abstract) else abstract)
 	try:
-		add_abstracts(df)
+		add_orcid_ids(df)
 	except Exception as e: 
 		print(e)
 	finally:

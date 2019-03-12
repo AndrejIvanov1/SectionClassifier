@@ -6,9 +6,21 @@ class OrcidParser:
     def __init__(self, xml_content):
         self.ET = etree.fromstring(xml_content)
 
+    """
+    <contrib-group>
+        <contrib contrib-type="author" corresp="yes">
+            <name>
+                <surname>Raufman</surname>
+                <given-names>Jean-Pierre</given-names>
+            </name>
+            <contrib-id contrib-id-type="orcid">http://orcid.org/0000-0002-6340-4382</contrib-id>
+        </contrib>
+    </contrib-group>
+    """
     def parse_orcid_id(self):
-        contrib_tag = self.ET.xpath("//contrib-id")
-        print([t.text for t in contrib_tag])
+        contributors = self.ET.xpath("//contrib-group")
+        print(contributors)
+        sleep(1)
     """
     # <front>
     # .....

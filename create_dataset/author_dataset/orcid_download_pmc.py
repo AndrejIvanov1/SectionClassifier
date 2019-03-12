@@ -1,15 +1,19 @@
 """
 Usage:
-    orcid_download.py --data_dir <data_dir> [--restore]
+    orcid_download_pmc.py --target_file <target_file> --output_file <output_file> --list_file <list_file>
 
-Options
-    --data_dir <data_dir>
-    --restore
+Options:
+    --target_file <target_file> File to process
+    --output_file <output_file> Where to save the file with the orcid ids
+    --list_file <list_file> Where to find/download list of commercial use pmc files
 """
 from urllib import urlretrieve
 import io
 from ftplib import FTP
 from docopt import docopt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import os
 import tempfile
 import tarfile
@@ -52,16 +56,14 @@ def file_too_large(article_id):
 """
     fsdadfsa
 """
-def download_articles(max_number=100000, restore=False):
+def add_orcid_ids(df, max_number=100000, restore=False):
     skip_until = 197
     if restore:
         skip_until = last_downloaded_file() + 1
 
     with open(local_list_path, 'r') as f:
-        for index, line in enumerate(f):
+        for index, line in reversed(list((enumerate(f)))):
             try:
-                if index == 0:
-                    continue
                 if index == max_number + 1:
                     break
                 if index < skip_until:
@@ -78,11 +80,9 @@ def download_articles(max_number=100000, restore=False):
                 xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
 
                 if xml_content is not None:
-                    author_info = save_orcid(xml_content)
+                    author_info = parse(xml_content)
 
                 last_downloaded_file_is(index)
-
-                #print("Time: ", time.time() - start_time)
             except Exception as e:
                 print(e)
                 with open("errors.txt", "a+") as err:
@@ -94,12 +94,8 @@ def download_articles(max_number=100000, restore=False):
     Input: xml_content - XML content of an article as a string
 
 """
-def save_orcid(xml_content):
+def parse(xml_content):
     parser = OrcidParser(xml_content)
-    if 'orcid' in xml_content.lower() or \
-       'orchid' in xml_content.lower():
-        print("ORCID FOUND")
-        #print(xml_content)
     orcid_id = parser.parse_orcid_id()
 
 
@@ -148,12 +144,19 @@ def last_downloaded_file():
 
 if __name__ == "__main__":
     arguments = docopt(__doc__)
-    print("arguments: ", arguments)
-    restore = arguments['--restore']
-    local_data_dir = arguments["--data_dir"]
-    local_list_path = os.path.join(local_data_dir, files_list_name)
+    filepath = arguments["--target_file"]
+    output_path = arguments["--output_file"]
+    local_list_path = arguments["--list_file"]
 
+    local_list_path = os.path.join(local_list_path, files_list_name)
     if not os.path.exists(local_list_path):
         download_files_list()
-
-    download_articles(max_number=1000000, restore=restore)
+    
+    df = pd.read_csv(filepath)
+    try:
+        add_orcid_ids(df)
+    except Exception as e: 
+        print(e)
+    finally:
+        print(df)
+        df.to_csv(output_path, encoding='utf-8', index=False)
