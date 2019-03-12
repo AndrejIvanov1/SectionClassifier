@@ -80,8 +80,10 @@ def add_orcid_ids(df, max_number=100000, restore=False):
                 xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
 
                 if xml_content is not None:
-                    author_info = parse(xml_content)
-
+                    labeled_authors = parse(xml_content)
+                
+                df = augment_df(df, labeled_authors)
+                print(df)
                 last_downloaded_file_is(index)
             except Exception as e:
                 print(e)
@@ -90,15 +92,28 @@ def add_orcid_ids(df, max_number=100000, restore=False):
                     #err.write("Error parsing # {} \n".format(index))
 
 
+def augment_df(df, labeled_authors):
+    for firstname, lastname, orcid in labeled_authors:
+        if already_has(df, orcid):
+            continue
+
+        new_row = pd.DataFrame([[firstname, lastname, orcid]], columns=list(df))
+        df = df.append(new_row)
+
+    return df
+
+
+def already_has(df, orcid): 
+    return orcid in df.orcid.values
 """
     Input: xml_content - XML content of an article as a string
 
 """
 def parse(xml_content):
     parser = OrcidParser(xml_content)
-    orcid_id = parser.parse_orcid_id()
+    labeled_authors = parser.parse_orcid_id()
 
-
+    return labeled_authors
 """
     Input: url - link of an article on the FTP server
 
@@ -108,7 +123,7 @@ def parse(xml_content):
 def download_single_article(url):
     temp_file = 'tmpehotsd4z.tar.gz'
 
-    print("Downloading {} into {}".format(url, temp_file))
+    #print("Downloading {} into {}".format(url, temp_file))
     try:
         
         urlretrieve(url, temp_file)
@@ -116,7 +131,7 @@ def download_single_article(url):
         tar = tarfile.open(temp_file)
         for member in tar.getmembers():
             if member.name.endswith('xml'):
-                print("XML file found: " + member.name)
+                #print("XML file found: " + member.name)
                 content = tar.extractfile(member).read().decode('ascii')
                 return content
 
