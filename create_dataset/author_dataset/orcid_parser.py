@@ -6,6 +6,12 @@ class OrcidParser:
     def __init__(self, xml_content):
         self.ET = etree.fromstring(xml_content)
 
+        """
+        if 'orcid' in xml_content:
+            print("Orcid found")
+        else:
+            print("No orcid")"""
+            
     """
     <contrib-group>
         <contrib contrib-type="author" corresp="yes">
@@ -34,6 +40,9 @@ class OrcidParser:
 
         return last_name.text
 
+    """
+        Returns: list of tuples: (firstname, lastname, orcid)
+    """
     def parse_orcid_id(self):
         contributors = self.ET.xpath("//contrib-group")[0]
         labeled_authors = []

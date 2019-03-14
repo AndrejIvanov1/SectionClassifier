@@ -7,7 +7,12 @@ Options:
     --output_file <output_file> Where to save the file with the orcid ids
     --list_file <list_file> Where to find/download list of commercial use pmc files
 """
-from urllib import urlretrieve
+import sys
+
+if sys.version_info[0] < 3:
+    from urllib import urlretrieve
+else:
+    from urllib.request import urlretrieve
 import io
 from ftplib import FTP
 from docopt import docopt
@@ -35,6 +40,7 @@ BYTES_IN_MEGABYTE = 1000000.0
     Stores it in ./data/oa_comm_use_file_list.txt
 """
 def download_files_list():
+    print("Local data dir: ", local_data_dir)
     if not os.path.exists(local_data_dir):
         os.makedirs(local_data_dir)
 
@@ -77,12 +83,15 @@ def add_orcid_ids(df, max_number=100000, restore=False):
                     print("File too large: {}Mb".format(file_size_mgbs))
                     continue
 
-                xml_content = download_single_article(os.path.join(ftp_base_url, article_id))
+                url = os.path.join(ftp_base_url, article_id)
+                xml_content = download_single_article(url)
 
                 if xml_content is not None:
                     labeled_authors = parse(xml_content)
+                    print("Labeled authors: " , labeled_authors)
+                    labeled_authors = [author_info + (url,) for author_info in labeled_authors]
+                    df = augment_df(df, labeled_authors)
                 
-                df = augment_df(df, labeled_authors)
                 print(df)
                 last_downloaded_file_is(index)
             except Exception as e:
@@ -93,17 +102,27 @@ def add_orcid_ids(df, max_number=100000, restore=False):
 
 
 def augment_df(df, labeled_authors):
-    for firstname, lastname, orcid in labeled_authors:
-        if already_has(df, orcid):
-            continue
-
-        new_row = pd.DataFrame([[firstname, lastname, orcid]], columns=list(df))
-        df = df.append(new_row)
+    for firstname, lastname, orcid, url in labeled_authors:
+        if already_contains(df, orcid):
+            df = update_author_entry(df, orcid, url)
+        else: # first time we get this author
+            df = create_author_entry(df, firstname, lastname, orcid, url)
 
     return df
 
+def update_author_entry(df, orcid, url):
+    author_row = df.loc[df['orcid'] == orcid]
+    author_row['urls'].append(url)
 
-def already_has(df, orcid): 
+    return df
+
+def create_author_entry(df, firstname, lastname, orcid, url):
+    new_row = pd.DataFrame([[firstname, lastname, orcid, [url]]], columns=list(df))
+    df = df.append(new_row)
+
+    return df
+
+def already_contains(df, orcid): 
     return orcid in df.orcid.values
 """
     Input: xml_content - XML content of an article as a string
