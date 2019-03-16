@@ -62,28 +62,28 @@ def file_too_large(article_id):
 """
     fsdadfsa
 """
-def add_orcid_ids(df, max_number=100000, restore=False):
-    skip_until = 197
-    if restore:
-        skip_until = last_downloaded_file() + 1
+def add_orcid_ids(df, restore=False):
 
+    print("Skip until: ", skip_until)
     with open(local_list_path, 'r') as f:
         for index, line in reversed(list((enumerate(f)))):
             try:
-                if index == max_number + 1:
-                    break
-                if index < skip_until:
+                if restore and index > skip_until:
+                    continue
+
+                article_id = line.rstrip().split("\t")[0]
+                url = os.path.join(ftp_base_url, article_id)
+                
+                if already_in_df(url):
                     continue
 
                 start_time = time.time()
                 print("ARTICLE # {} ------------------------------".format(index))
-                article_id = line.rstrip().split("\t")[0]
-
+                
                 if (file_too_large(article_id)):
                     print("File too large: {}Mb".format(file_size_mgbs))
                     continue
 
-                url = os.path.join(ftp_base_url, article_id)
                 xml_content = download_single_article(url)
 
                 if xml_content is not None:
@@ -91,28 +91,40 @@ def add_orcid_ids(df, max_number=100000, restore=False):
                     print("Labeled authors: " , labeled_authors)
                     labeled_authors = [author_info + (url,) for author_info in labeled_authors]
                     df = augment_df(df, labeled_authors)
-                
-                print(df)
-                last_downloaded_file_is(index)
+
+                if index % 20 == 0:
+                    print("Saving df to {}".format(output_path))
+                    df.to_csv(output_path, encoding='utf-8', index=False)
+                    last_downloaded_file_is(index)
             except Exception as e:
                 print(e)
                 with open("errors.txt", "a+") as err:
+                    err.write("Error parsing # {} \n".format(index))
                     pass
-                    #err.write("Error parsing # {} \n".format(index))
 
 
 def augment_df(df, labeled_authors):
     for firstname, lastname, orcid, url in labeled_authors:
-        if already_contains(df, orcid):
-            df = update_author_entry(df, orcid, url)
-        else: # first time we get this author
-            df = create_author_entry(df, firstname, lastname, orcid, url)
+        if not contains(df, url):
+            df = add_author_entry(df, firstname, lastname, orcid, url)
 
     return df
 
+
+def add_author_entry(df, firstname, lastname, orcid, url):
+    new_row = pd.DataFrame([[firstname, lastname, orcid, url]], columns=list(df))
+    df = df.append(new_row, ignore_index=True)
+
+    return df
+
+def contains(df, url):
+    return url in df.url.values
+"""
 def update_author_entry(df, orcid, url):
-    author_row = df.loc[df['orcid'] == orcid]
-    author_row['urls'].append(url)
+    print("Updating author")
+    urls = df.loc[df['orcid'] == orcid, 'urls']
+    print("Current urls: ", urls)
+    urls.append(url)
 
     return df
 
@@ -123,7 +135,7 @@ def create_author_entry(df, firstname, lastname, orcid, url):
     return df
 
 def already_contains(df, orcid): 
-    return orcid in df.orcid.values
+    return orcid in df.orcid.values """
 """
     Input: xml_content - XML content of an article as a string
 
@@ -163,6 +175,8 @@ def download_single_article(url):
         pass
         # os.remove(temp_file)
 
+def already_in_df(url):
+    return url in downloaded_urls
 
 def last_downloaded_file_is(index):
     with open("last_index.txt", 'w') as f:
@@ -174,7 +188,7 @@ def last_downloaded_file():
             return int(f.read().strip())
     except Exception as e:
         print(e)
-        return -1  
+        return -1
 
 if __name__ == "__main__":
     arguments = docopt(__doc__)
@@ -185,12 +199,9 @@ if __name__ == "__main__":
     local_list_path = os.path.join(local_list_path, files_list_name)
     if not os.path.exists(local_list_path):
         download_files_list()
-    
+
     df = pd.read_csv(filepath)
-    try:
-        add_orcid_ids(df)
-    except Exception as e: 
-        print(e)
-    finally:
-        print(df)
-        df.to_csv(output_path, encoding='utf-8', index=False)
+    downloaded_urls = set(df.url.values)
+    skip_until = last_downloaded_file()
+
+    add_orcid_ids(df, restore=True)
