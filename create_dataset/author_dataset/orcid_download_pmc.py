@@ -26,6 +26,9 @@ import time
 
 from orcid_parser import OrcidParser
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 ftp_connection = 'ftp.ncbi.nlm.nih.gov'
 ftp_base_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/'
 files_list_name = 'oa_comm_use_file_list.txt'
@@ -92,7 +95,7 @@ def add_orcid_ids(df, restore=False):
                     labeled_authors = [author_info + (url,) for author_info in labeled_authors]
                     df = augment_df(df, labeled_authors)
 
-                if index % 20 == 0:
+                if index % 2 == 0:
                     print("Saving df to {}".format(output_path))
                     df.to_csv(output_path, encoding='utf-8', index=False)
                     last_downloaded_file_is(index)
@@ -105,7 +108,8 @@ def add_orcid_ids(df, restore=False):
 
 def augment_df(df, labeled_authors):
     for firstname, lastname, orcid, url in labeled_authors:
-        if not contains(df, url):
+        if not contains(df, orcid, url):
+            print("Adding ", firstname, lastname, orcid, url)
             df = add_author_entry(df, firstname, lastname, orcid, url)
 
     return df
@@ -117,8 +121,10 @@ def add_author_entry(df, firstname, lastname, orcid, url):
 
     return df
 
-def contains(df, url):
-    return url in df.url.values
+def contains(df, orcid, url):
+    row = df[(df.orcid == orcid) & (df.url == url)]
+    
+    return row.shape[0] > 0
 """
 def update_author_entry(df, orcid, url):
     print("Updating author")
