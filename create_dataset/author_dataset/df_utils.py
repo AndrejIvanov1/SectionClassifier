@@ -19,3 +19,7 @@ def contains(df, orcid, url):
     row = df[(df.orcid == orcid) & (df.url == url)]
     
     return row.shape[0] > 0
+
+def has_pmc_id(df, pmc_id):
+    return any([True for url in df.url.values if pmc_id in url])
+

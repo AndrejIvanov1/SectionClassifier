@@ -16,10 +16,13 @@ import time
 
 from parser import parse_ids
 from orcid_parser import OrcidParser
+import df_utils as dfu
 
 s = requests.Session()
 retries = Retry(total=5, backoff_factor=1)
 s.mount('https://', HTTPAdapter(max_retries=retries))
+
+df = ''
 
 """
 	Input: firstname and lastname of author
@@ -30,7 +33,7 @@ def papers_for_author_url(firstname, lastname):
     fullname = '{firstname} {lastname}'.format(firstname=firstname, lastname=lastname)
     fullname = fullname.replace(' ', url_whitespace)
 
-    url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pmc&term={}[AU]&retmax=50'.format(fullname)
+    url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pmc&term={}[AU]&retmax=10'.format(fullname)
     return url
 
 
@@ -43,10 +46,11 @@ def pmc_url(pmc_id):
 
 
 def download_paper(pmc_id, wait=0):
-    time.sleep(wait*1000)       
+    time.sleep(wait)       
     url = pmc_url(pmc_id)
 
     r = s.get(url)
+    print(url)
     xml_content = r.content
 
     return xml_content
@@ -55,30 +59,46 @@ def download_paper(pmc_id, wait=0):
     Output: list of PMC ids of articles written by different authors
             with the same name
 """
-def find_same_name_articles(firstname, lastname, orcid):
+def find_same_name_authors(firstname, lastname, orcid):
+    global df
+
     url = papers_for_author_url(firstname, lastname)
     r = s.get(url)
     xml_content = r.content
     ids = parse_ids(xml_content)
 
     for pmc_id in ids:
-        xml_content = download_paper(pmc_id, wait=0.00)
+        if dfu.has_pmc_id(df, pmc_id):
+            continue
+
+        xml_content = download_paper(pmc_id, wait=0.5)
         parser = OrcidParser(xml_content)
         pmc_id = parser.parse_pmc_id()
-        print(pmc_id)
-        input()
+        
         labeled_authors = parser.parse_orcid_id()
+        print("Labeled authors: ", labeled_authors)
+        labeled_authors = [author_info + (pmc_id,) for author_info in labeled_authors]
+        df = dfu.augment_df(df, labeled_authors)
+
+    df.to_csv(filepath, encoding='utf-8', index=False)
 
     return ids
+
+def add_authors(skip_until=0):
+    for index, row in df.iterrows():
+        if index < skip_until:
+            continue
+
+        print("Index: {}".format(index))
+        find_same_name_authors(row['firstname'], row['lastname'], row['orcid'])
 
 if __name__ == "__main__":
     arguments = docopt(__doc__)
     filepath = arguments["--target_file"]
 
-    #df = pd.read_csv(filepath)
+    df = pd.read_csv(filepath)
 
-    firstname, lastname, orcid = 'Kristin M.', 'Wall', 'http://orcid.org/0000-0001-8547-2004'
-    find_same_name_articles(firstname, lastname, orcid)
+    add_authors(skip_until=44)
     
 
 
