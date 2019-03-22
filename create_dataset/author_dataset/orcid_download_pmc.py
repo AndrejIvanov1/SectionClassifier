@@ -42,10 +42,8 @@ BYTES_IN_MEGABYTE = 1000000.0
     Downloads a list of papers we can download from PMC.
     Stores it in ./data/oa_comm_use_file_list.txt
 """
-def download_files_list():
-    print("Local data dir: ", local_data_dir)
-    if not os.path.exists(local_data_dir):
-        os.makedirs(local_data_dir)
+def download_files_list(local_list_path):
+    print("Local data dir: ", local_list_path)
 
     urlretrieve(os.path.join(ftp_base_url, files_list_name), local_list_path)
 
@@ -204,10 +202,13 @@ if __name__ == "__main__":
 
     local_list_path = os.path.join(local_list_path, files_list_name)
     if not os.path.exists(local_list_path):
-        download_files_list()
+        download_files_list(local_list_path)
 
     df = pd.read_csv(filepath)
     downloaded_urls = set(df.url.values)
+
+    print("Files downloaded so far: {}".format(len(downloaded_urls)))
+    print("Authors found: {}".format(df['orcid'].nunique()))
     skip_until = last_downloaded_file()
 
     add_orcid_ids(df, restore=True)

@@ -35,7 +35,7 @@ def download_article(id):
 	r = s.get(url)
 	xml_content = r.content
 
-	if 'orchid' in xml_content:
+	if 'orcid' in xml_content:
 		print(xml_content)
 
 	#text = r.content.decode('utf8')
