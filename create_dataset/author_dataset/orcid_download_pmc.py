@@ -67,7 +67,7 @@ def file_too_large(article_id):
 """
 def add_orcid_ids(df, restore=False):
 
-    print("Skip until: ", skip_until)
+    print("Skip until: {}".format(skip_until))
     with open(local_list_path, 'r') as f:
         for index, line in reversed(list((enumerate(f)))):
             try:
