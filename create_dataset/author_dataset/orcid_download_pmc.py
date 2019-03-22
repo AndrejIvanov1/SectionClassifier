@@ -25,6 +25,7 @@ import tarfile
 import time
 
 from orcid_parser import OrcidParser
+import df_utils as dfu
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -91,7 +92,7 @@ def add_orcid_ids(df, restore=False):
                     labeled_authors = parse(xml_content)
                     print("Labeled authors: " , labeled_authors)
                     labeled_authors = [author_info + (url,) for author_info in labeled_authors]
-                    df = augment_df(df, labeled_authors)
+                    df = dfu.augment_df(df, labeled_authors)
 
                 if index % 2 == 0:
                     print("Saving df to {}".format(output_path))
@@ -103,43 +104,6 @@ def add_orcid_ids(df, restore=False):
                     err.write("Error parsing # {} \n".format(index))
                     pass
 
-
-def augment_df(df, labeled_authors):
-    for firstname, lastname, orcid, url in labeled_authors:
-        if not contains(df, orcid, url):
-            print("Adding ", firstname, lastname, orcid, url)
-            df = add_author_entry(df, firstname, lastname, orcid, url)
-
-    return df
-
-
-def add_author_entry(df, firstname, lastname, orcid, url):
-    new_row = pd.DataFrame([[firstname, lastname, orcid, url]], columns=list(df))
-    df = df.append(new_row, ignore_index=True)
-
-    return df
-
-def contains(df, orcid, url):
-    row = df[(df.orcid == orcid) & (df.url == url)]
-    
-    return row.shape[0] > 0
-"""
-def update_author_entry(df, orcid, url):
-    print("Updating author")
-    urls = df.loc[df['orcid'] == orcid, 'urls']
-    print("Current urls: ", urls)
-    urls.append(url)
-
-    return df
-
-def create_author_entry(df, firstname, lastname, orcid, url):
-    new_row = pd.DataFrame([[firstname, lastname, orcid, [url]]], columns=list(df))
-    df = df.append(new_row)
-
-    return df
-
-def already_contains(df, orcid): 
-    return orcid in df.orcid.values """
 """
     Input: xml_content - XML content of an article as a string
 
