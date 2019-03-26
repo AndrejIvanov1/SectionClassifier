@@ -60,8 +60,11 @@ class OrcidParser:
 
 
     def parse_pmc_id(self):
-        pmc_id = self.ET.xpath("//article-id[@pub-id-type='pmc']")[0]
+        pmc_id_field = self.ET.xpath("//article-id[@pub-id-type='pmc']")
+        if not pmc_id_field:
+            return None
 
+        pmc_id = pmc_id_field[0]
         return pmc_id.text
 
 

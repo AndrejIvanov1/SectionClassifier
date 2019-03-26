@@ -14,7 +14,7 @@ from requests.packages.urllib3.util.retry import Retry
 import os
 import time
 
-from parser import parse_ids
+import ids_parser as p
 from orcid_parser import OrcidParser
 import df_utils as dfu
 
@@ -65,17 +65,20 @@ def find_same_name_authors(firstname, lastname, orcid):
     url = papers_for_author_url(firstname, lastname)
     r = s.get(url)
     xml_content = r.content
-    ids = parse_ids(xml_content)
+    ids = p.parse_ids(xml_content)
 
     for pmc_id in ids:
         if dfu.has_pmc_id(df, pmc_id):
             continue
 
         xml_content = download_paper(pmc_id, wait=0.5)
-        parser = OrcidParser(xml_content)
-        pmc_id = parser.parse_pmc_id()
+        orcid_parser = OrcidParser(xml_content)
+        pmc_id = orcid_parser.parse_pmc_id()
         
-        labeled_authors = parser.parse_orcid_id()
+        if not pmc_id:
+            continue
+            
+        labeled_authors = orcid_parser.parse_orcid_id()
         print("Labeled authors: ", labeled_authors)
         labeled_authors = [author_info + (pmc_id,) for author_info in labeled_authors]
         df = dfu.augment_df(df, labeled_authors)
@@ -90,7 +93,10 @@ def add_authors(skip_until=0):
             continue
 
         print("Index: {}".format(index))
-        find_same_name_authors(row['firstname'], row['lastname'], row['orcid'])
+        try:
+            find_same_name_authors(row['firstname'], row['lastname'], row['orcid'])
+        except:
+            pass
 
 if __name__ == "__main__":
     arguments = docopt(__doc__)
@@ -98,7 +104,7 @@ if __name__ == "__main__":
 
     df = pd.read_csv(filepath)
 
-    add_authors(skip_until=44)
+    add_authors(skip_until=18638)
     
 
 
